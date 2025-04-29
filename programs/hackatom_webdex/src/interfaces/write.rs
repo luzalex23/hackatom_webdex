@@ -12,7 +12,7 @@ pub struct CreateBot<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// Essa função inicializa o estado do Bot com os parâmetros fornecidos.
+/// Essa função cria (registra) um novo Bot com os parâmetros fornecidos.
 pub fn create_bot(
     ctx: Context<CreateBot>,
     prefix: String,

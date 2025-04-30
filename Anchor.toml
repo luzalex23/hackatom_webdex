@@ -6,14 +6,17 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-hackatom_webdex = "GzxWyUMibB3HZeyzCRc7GV9zLKnV5pQT43fZMrivbWb2"
+hackatom_webdex = "B4jpBzqnqaUrESQvyLuGzJqvDDxoBsSHYKtSe1ihPbwV"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "http://127.0.0.1:8899"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run mocha -t 1000000 tests/"
+
+[test]
+startup_wait = 120

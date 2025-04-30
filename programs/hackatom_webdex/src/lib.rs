@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("3p3W4Vq9Qsb9duYbz1JBhJZUtXBFNTA3J1nn6e4veFuC");
+declare_id!("B4jpBzqnqaUrESQvyLuGzJqvDDxoBsSHYKtSe1ihPbwV");
 
 // Módulos internos
 pub mod state;

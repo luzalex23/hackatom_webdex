@@ -112,6 +112,16 @@ pub struct ProcessPayment<'info> {
 pub struct ValidateToken {}
 /*end payaments modules*/
 
+/*begin strategy modules*/
+#[derive(Accounts)]
+pub struct ExecuteStrategy<'info> {
+    #[account(mut, has_one = owner)]
+    pub sub_account: Account<'info, state::SubAccount>,
+    #[account(mut)]
+    pub bot: Account<'info, state::Bot>,
+    pub owner: Signer<'info>,
+}
+/*end strategy modules*/
 #[program]
 pub mod hackatom_webdex {
     use super::*;
@@ -119,6 +129,8 @@ pub mod hackatom_webdex {
     use crate::modules::manager::*;
     use crate::modules::sub_accounts::*;
     use crate::modules::payments::validate_token as validate_token_handler;
+    use crate::modules::strategy::execute_strategy as execute_strategy_handler;
+
 
 
 
@@ -212,5 +224,12 @@ pub mod hackatom_webdex {
         validate_token_handler(token)
     }
      
-        
+     /*fn strategy*/   
+     pub fn execute_strategy(
+        ctx: Context<ExecuteStrategy>,
+        data: Vec<u8>,
+        execution_fee: u64,
+    ) -> Result<()> {
+        execute_strategy_handler(ctx, data, execution_fee)
+    }
 }

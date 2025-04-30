@@ -43,3 +43,15 @@ impl User {
         + 8                        // gas_balance
         + 8;                       // pass_balance
 }
+/// Representa uma subconta com saldo atrelado a um token e bot.
+#[account]
+pub struct SubAccount {
+    pub owner: Pubkey,
+    pub bot: Pubkey,
+    pub token: Pubkey,
+    pub balance: u64,
+}
+
+impl SubAccount {
+    pub const SPACE: usize = 8 + 32 + 32 + 32 + 8;
+}

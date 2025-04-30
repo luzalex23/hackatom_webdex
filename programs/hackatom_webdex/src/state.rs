@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-
+/// Representa um bot cadastrado no sistema.
 #[account]
 pub struct Bot {
     pub prefix: String,
@@ -28,4 +28,18 @@ impl Bot {
                             + 32      // payments
                             + 32      // token_pass
                             + 8;      // padding extra
+}
+/// Representa um usuário registrado no sistema, com saldos de gas e passes.
+#[account]
+pub struct User {
+    pub owner: Pubkey,
+    pub gas_balance: u64,
+    pub pass_balance: u64,
+}
+
+impl User {
+    pub const SPACE: usize = 8     // Discriminator
+        + 32                       // owner
+        + 8                        // gas_balance
+        + 8;                       // pass_balance
 }

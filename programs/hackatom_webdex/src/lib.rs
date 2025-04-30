@@ -23,12 +23,51 @@ pub struct CreateBot<'info> {
 pub struct GetBotInfo<'info> {
     pub bot: Account<'info, state::Bot>,
 }
+/*manager module functions*/
 
+#[derive(Accounts)]
+pub struct RegisterUser<'info> {
+    #[account(init, payer = user, space = state::User::SPACE)]
+    pub user_account: Account<'info, state::User>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AddGas<'info> {
+    #[account(mut, has_one = owner)]
+    pub user_account: Account<'info, state::User>,
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct RemoveGas<'info> {
+    #[account(mut, has_one = owner)]
+    pub user_account: Account<'info, state::User>,
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct AddPass<'info> {
+    #[account(mut, has_one = owner)]
+    pub user_account: Account<'info, state::User>,
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct Rebalance<'info> {
+    #[account(mut, has_one = owner)]
+    pub user_account: Account<'info, state::User>,
+    pub owner: Signer<'info>,
+}
+/*end functions manager module*/
 #[program]
 pub mod hackatom_webdex {
     use super::*;
     // Aqui o programa chama (dispara) a lógica definida no módulo factory.
     use crate::modules::factory::{ create_bot as factory_create_bot, get_bot_info as factory_get_bot_info };
+    use crate::modules::manager::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         msg!("Programa inicializado.");
@@ -60,5 +99,24 @@ pub mod hackatom_webdex {
 
     pub fn get_bot_info(ctx: Context<GetBotInfo>) -> Result<state::Bot> {
         factory_get_bot_info(ctx)
+    }
+    pub fn register_user(ctx: Context<RegisterUser>) -> Result<()> {
+        register_user(ctx)
+    }
+    
+    pub fn add_gas(ctx: Context<AddGas>, amount: u64) -> Result<()> {
+        add_gas(ctx, amount)
+    }
+    
+    pub fn remove_gas(ctx: Context<RemoveGas>, amount: u64) -> Result<()> {
+        remove_gas(ctx, amount)
+    }
+    
+    pub fn add_pass(ctx: Context<AddPass>, amount: u64) -> Result<()> {
+        add_pass(ctx, amount)
+    }
+    
+    pub fn rebalance(ctx: Context<Rebalance>) -> Result<()> {
+        rebalance(ctx)
     }
 }

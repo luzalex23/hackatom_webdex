@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("366X1g31WNniz8dPY51DXxg9dR4gcKeoBjyHvcbdyxr7");
+declare_id!("DLKmqRRaAH66bReErpsGsQ97giWuhnNbR8grqGgrHz6J");
 
 // Módulos internos
 pub mod state;
@@ -99,12 +99,27 @@ pub struct GetSubAccountInfo<'info> {
     pub sub_account: Account<'info, state::SubAccount>,
 }
 /*end sub_accounts module*/
+
+/*begin payaments modules*/
+#[derive(Accounts)]
+pub struct ProcessPayment<'info> {
+    #[account(mut, has_one = owner)]
+    pub from: Account<'info, state::SubAccount>,
+    pub owner: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ValidateToken {}
+/*end payaments modules*/
+
 #[program]
 pub mod hackatom_webdex {
     use super::*;
     use crate::modules::factory::{ create_bot as factory_create_bot, get_bot_info as factory_get_bot_info };
     use crate::modules::manager::*;
     use crate::modules::sub_accounts::*;
+    use crate::modules::payments::validate_token as validate_token_handler;
+
 
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
@@ -184,4 +199,18 @@ pub mod hackatom_webdex {
     pub fn get_subaccount_info(ctx: Context<GetSubAccountInfo>) -> Result<state::SubAccount> {
         get_subaccount_info(ctx)
     }
+    /*fn payaments*/
+    pub fn process_payment(
+        ctx: Context<ProcessPayment>,
+        amount: u64,
+        to: Pubkey,
+    ) -> Result<()> {
+        process_payment(ctx, amount, to)
+    }
+    
+    pub fn validate_token(_ctx: Context<ValidateToken>, token: Pubkey) -> Result<()> {
+        validate_token_handler(token)
+    }
+     
+        
 }

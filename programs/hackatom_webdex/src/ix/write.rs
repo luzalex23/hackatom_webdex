@@ -1,9 +1,9 @@
+/*write interface*/
 use anchor_lang::prelude::*;
-// Reexporta o account correto renomeado para escrita
-pub use crate::modules::factory::BotCreationAccounts;
+pub use crate::modules::factory::CreateBot;
 
 pub fn create_bot(
-    ctx: Context<BotCreationAccounts>,
+    ctx: Context<CreateBot>,
     prefix: String,
     name: String,
     manager: Pubkey,

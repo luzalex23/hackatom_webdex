@@ -1,20 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_lang::prelude::msg;
 use crate::state::Bot;
-
-#[derive(Accounts)]
-pub struct BotCreationAccounts<'info> {
-    #[account(init, payer = admin, space = Bot::SPACE)]
-    pub bot: Account<'info, Bot>,
-
-    #[account(mut)]
-    pub admin: Signer<'info>,
-
-    pub system_program: Program<'info, System>,
-}
+// IMPORTANTE: NÃO redeclare as structs de contexto aqui. Use as que já estão definidas em lib.rs.
+// Se precisar, você pode importar para facilitar:
+use crate::{ CreateBot, GetBotInfo };
 
 pub fn create_bot(
-    ctx: Context<BotCreationAccounts>,
+    ctx: Context<CreateBot>,
     prefix: String,
     name: String,
     manager: Pubkey,
@@ -36,22 +27,16 @@ pub fn create_bot(
     Ok(())
 }
 
-#[derive(Accounts)]
-pub struct BotInfoAccounts<'info> {
-    pub bot: Account<'info, Bot>,
-}
-
-pub fn get_bot_info(ctx: Context<BotInfoAccounts>) -> Result<Bot> {
+pub fn get_bot_info(ctx: Context<GetBotInfo>) -> Result<Bot> {
     let bot_account = &ctx.accounts.bot;
-    let ret_bot = Bot {
+    Ok(Bot {
         prefix: bot_account.prefix.clone(),
         name: bot_account.name.clone(),
         owner: bot_account.owner,
         manager: bot_account.manager,
         strategy: bot_account.strategy,
         sub_account: bot_account.sub_account,
-        payments: bot_account.payments.clone(),
+        payments: bot_account.payments,
         token_pass: bot_account.token_pass,
-    };
-    Ok(ret_bot)
+    })
 }

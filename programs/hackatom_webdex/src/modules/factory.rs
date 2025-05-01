@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 use crate::state::Bot;
-// IMPORTANTE: NÃO redeclare as structs de contexto aqui. Use as que já estão definidas em lib.rs.
-// Se precisar, você pode importar para facilitar:
 use crate::{ CreateBot, GetBotInfo };
 
 pub fn create_bot(

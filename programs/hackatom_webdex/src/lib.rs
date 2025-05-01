@@ -1,11 +1,13 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, TokenAccount, Token};
 
-declare_id!("DLKmqRRaAH66bReErpsGsQ97giWuhnNbR8grqGgrHz6J");
+declare_id!("H4c87pshhbmUwiNzNcuSs1yjqEzetWNsmCo2HfsyqY89");
 
 // Módulos internos
 pub mod state;
 pub mod modules;
-  
+pub use crate::MintToken as FaucetMintToken;
+
 // Declaração dos contextos
 #[derive(Accounts)]
 pub struct Initialize {}
@@ -122,17 +124,36 @@ pub struct ExecuteStrategy<'info> {
     pub owner: Signer<'info>,
 }
 /*end strategy modules*/
+
+/*begin faucet module*/
+#[derive(Accounts)]
+pub struct MintToken<'info> {
+    #[account(mut)]
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub recipient: Account<'info, TokenAccount>,
+
+    pub authority: Signer<'info>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+/*end faucet module*/
+
 #[program]
 pub mod hackatom_webdex {
     use super::*;
     use crate::modules::factory::{ create_bot as factory_create_bot, get_bot_info as factory_get_bot_info };
     use crate::modules::manager::*;
     use crate::modules::sub_accounts::*;
-    use crate::modules::payments::validate_token as validate_token_handler;
+    use crate::modules::payments::{
+        validate_token as validate_token_handler,
+        pay_fee as pay_fee_handler,
+        withdraw as withdraw_handler,
+    };
     use crate::modules::strategy::execute_strategy as execute_strategy_handler;
-
-
-
+    use crate::modules::faucet::mint_token as mint_token_handler;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         msg!("Programa inicializado.");
@@ -223,7 +244,13 @@ pub mod hackatom_webdex {
     pub fn validate_token(_ctx: Context<ValidateToken>, token: Pubkey) -> Result<()> {
         validate_token_handler(token)
     }
-     
+    pub fn pay_fee(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
+        pay_fee_handler(ctx, amount)
+    }
+    
+    pub fn withdraw(ctx: Context<ProcessPayment>, amount: u64, fee_percent: u64) -> Result<()> {
+        withdraw_handler(ctx, amount, fee_percent)
+    }
      /*fn strategy*/   
      pub fn execute_strategy(
         ctx: Context<ExecuteStrategy>,
@@ -232,4 +259,8 @@ pub mod hackatom_webdex {
     ) -> Result<()> {
         execute_strategy_handler(ctx, data, execution_fee)
     }
+    /*fn faucet*/
+    pub fn mint_token(ctx: Context<MintToken>, amount: u64) -> Result<()> {
+        mint_token_handler(ctx, amount)
+    }    
 }

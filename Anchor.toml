@@ -12,7 +12,7 @@ hackatom_webdex = "DseNFJBsLpr6UGTiUxE8SLbBZABhz4CHAT9NDi6BhLJB"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "http://127.0.0.1:8899"
+cluster = "https://api.devnet.solana.com"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -101,10 +101,6 @@ Você pode verificar a implantação acessando um explorador Solana (como Solana
 ```markdown
 ## Testando a Interação
 
-Os testes de integração (escritos em TypeScript) demonstram como interagir com o programa implantado chamando suas instruções.
-
-Como o programa já está implantado (ver Passo 4), você pode executar os testes sem reimplantar usando a flag `--skip-deploy`:
-
 ```bash
 anchor test --skip-deploy
 

@@ -3,17 +3,25 @@ use crate::state::SubAccount;
 use crate::{ProcessPayment, ValidateToken};
 use std::str::FromStr;
 
-
-pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64, to: Pubkey) -> Result<()> {
+pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
     let from = &mut ctx.accounts.from;
+    let to = &mut ctx.accounts.to_account;
 
     require!(from.balance >= amount, ErrorCode::InsufficientBalance);
-    from.balance -= amount;
 
-    // Aqui você pode usar CPI ou lógica off-chain para realmente enviar fundos se necessário
-    msg!("Pagamento de {} para {}", amount, to);
+    from.balance = from.balance.checked_sub(amount).ok_or(ErrorCode::MathOverflow)?;
+    to.balance = to.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow)?;
+
+    msg!(
+        "Transferência de {} de {} para {}",
+        amount,
+        from.owner,
+        to.owner
+    );
+
     Ok(())
 }
+
 pub fn pay_fee(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
     let from = &mut ctx.accounts.from;
 
@@ -58,5 +66,8 @@ pub enum ErrorCode {
     InvalidPubkey,
     #[msg("Overflow ao calcular valores.")]
     Overflow,
-   
+    #[msg("Overflow aritmético")]
+    MathOverflow,
+    #[msg("Conta de destino não foi fornecida")]
+    DestinationAccountNotProvided,
 }

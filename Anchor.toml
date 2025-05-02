@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-hackatom_webdex = "Cj2cdLtPtmQvCo2YHvvxbYgN3Dn6v62FR8tDxoLfBhFF"
+hackatom_webdex = "DseNFJBsLpr6UGTiUxE8SLbBZABhz4CHAT9NDi6BhLJB"
 
 [registry]
 url = "https://api.apr.dev"

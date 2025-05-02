@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, TokenAccount, Token};
 
-declare_id!("Cj2cdLtPtmQvCo2YHvvxbYgN3Dn6v62FR8tDxoLfBhFF");
+declare_id!("DseNFJBsLpr6UGTiUxE8SLbBZABhz4CHAT9NDi6BhLJB");
 
 // Módulos internos
 pub mod state;
@@ -99,9 +99,11 @@ pub struct GetSubAccountInfo<'info> {
 
 #[derive(Accounts)]
 pub struct ProcessPayment<'info> {
-    #[account(mut, has_one = owner)]
+    #[account(mut)]
     pub from: Account<'info, state::SubAccount>,
     pub owner: Signer<'info>,
+    #[account(mut)]
+    pub to_account: Account<'info, state::SubAccount>,
 }
 
 #[derive(Accounts)]
@@ -210,9 +212,9 @@ pub mod hackatom_webdex {
         get_subaccount_info_handler(ctx)
     }
 
-    pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64, to: Pubkey) -> Result<()> {
-        process_payment_handler(ctx, amount, to)
-    }
+    pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
+        process_payment_handler(ctx, amount)
+    }    
 
     pub fn validate_token(_ctx: Context<ValidateToken>, token: Pubkey) -> Result<()> {
         validate_token_handler(token)

@@ -3,7 +3,24 @@ use anchor_spl::token::{mint_to, MintTo, Mint, Token, TokenAccount};
 
 use crate::MintToken;
 
+#[event]
+pub struct TokenMinted {
+    pub recipient: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+
+#[error_code]
+pub enum FaucetError {
+    #[msg("O valor precisa ser maior que zero.")]
+    InvalidAmount,
+}
+
 pub fn mint_token(ctx: Context<MintToken>, amount: u64) -> Result<()> {
+    // Validação
+    require!(amount > 0, FaucetError::InvalidAmount);
+
+    //  CPI para mint
     let cpi_ctx = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         MintTo {
@@ -14,6 +31,14 @@ pub fn mint_token(ctx: Context<MintToken>, amount: u64) -> Result<()> {
     );
 
     mint_to(cpi_ctx, amount)?;
-    msg!("Mintado {} tokens para {}", amount, ctx.accounts.recipient.key());
+
+    //  Evento
+    emit!(TokenMinted {
+        recipient: ctx.accounts.recipient.key(),
+        amount,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
+
+    msg!("✅ Mintado {} tokens para {}", amount, ctx.accounts.recipient.key());
     Ok(())
 }

@@ -1,6 +1,17 @@
 use anchor_lang::prelude::*;
 use crate::state::{SubAccount, Bot};
+use crate::errors::StrategyError;
 use crate::ExecuteStrategy;
+
+#[event]
+pub struct StrategyExecuted {
+    pub sub_owner: Pubkey,
+    pub bot: Pubkey,
+    pub token: Pubkey,
+    pub execution_fee: u64,
+    pub payload_size: u64,
+    pub timestamp: i64,
+}
 
 pub fn execute_strategy(
     ctx: Context<ExecuteStrategy>,
@@ -9,38 +20,33 @@ pub fn execute_strategy(
 ) -> Result<()> {
     let sub = &mut ctx.accounts.sub_account;
     let bot = &ctx.accounts.bot;
-    let caller = &ctx.accounts.owner;
 
-    //Verifica se o bot da subconta corresponde ao bot enviado
-    require!(
-        sub.bot == bot.key(),
-        StrategyError::BotMismatch
-    );
+    // Valida vínculo do bot com a subconta
+    require!(sub.bot == bot.key(), StrategyError::BotMismatch);
 
-    //Verifica se a subconta tem saldo suficiente
-    require!(
-        sub.balance >= execution_fee,
-        StrategyError::InsufficientBalance
-    );
+    // Verifica saldo suficiente
+    require!(execution_fee > 0, StrategyError::InvalidFee);
+    require!(sub.balance >= execution_fee, StrategyError::InsufficientBalance);
 
-    // Deduz o custo da execução
+    // Deduz taxa de execução
     sub.balance -= execution_fee;
 
-    //Lógica de execução simulada
-    msg!("Executando estratégia para subconta de {}", sub.owner);
-    msg!("Bot: {}", sub.bot);
-    msg!("Token: {}", sub.token);
-    msg!("Saldo restante: {}", sub.balance);
-    msg!("Payload de entrada: {:?} ({} bytes)", data, data.len());
-    msg!("Estratégia executada com sucesso.");
+    //  Emitir evento para rastreabilidade
+    emit!(StrategyExecuted {
+        sub_owner: sub.owner,
+        bot: bot.key(),
+        token: sub.token,
+        execution_fee,
+        payload_size: data.len() as u64,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
+
+    //  Logs úteis para debug
+    msg!(" Estratégia executada para subconta de {}", sub.owner);
+    msg!("• Bot vinculado: {}", sub.bot);
+    msg!("• Token: {}", sub.token);
+    msg!("• Saldo restante: {}", sub.balance);
+    msg!("• Payload: {:?} ({} bytes)", data, data.len());
 
     Ok(())
-}
-
-#[error_code]
-pub enum StrategyError {
-    #[msg("O bot associado não corresponde ao da subconta.")]
-    BotMismatch,
-    #[msg("Saldo insuficiente para execução.")]
-    InsufficientBalance,
 }

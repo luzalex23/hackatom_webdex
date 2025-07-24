@@ -1,19 +1,59 @@
 use anchor_lang::prelude::*;
 use crate::state::SubAccount;
-use crate::{ProcessPayment, ValidateToken};
+use crate::errors::PaymentError;
+use crate::{ProcessPayment, ValidateToken, Withdraw};
 use std::str::FromStr;
 
+#[event]
+pub struct PaymentProcessed {
+    pub from: Pubkey,
+    pub to: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct FeePaid {
+    pub user: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct Withdrawn {
+    pub user: Pubkey,
+    pub net_amount: u64,
+    pub fee_amount: u64,
+    pub fee_percent: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TokenValidated {
+    pub token: Pubkey,
+    pub timestamp: i64,
+}
+
 pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
+    require!(amount > 0, PaymentError::InvalidAmount);
+
     let from = &mut ctx.accounts.from;
     let to = &mut ctx.accounts.to_account;
 
-    require!(from.balance >= amount, ErrorCode::InsufficientBalance);
+    require!(from.balance >= amount, PaymentError::InsufficientBalance);
 
-    from.balance = from.balance.checked_sub(amount).ok_or(ErrorCode::MathOverflow)?;
-    to.balance = to.balance.checked_add(amount).ok_or(ErrorCode::MathOverflow)?;
+    from.balance = from.balance.checked_sub(amount).ok_or(PaymentError::MathOverflow)?;
+    to.balance = to.balance.checked_add(amount).ok_or(PaymentError::MathOverflow)?;
+
+    emit!(PaymentProcessed {
+        from: from.owner,
+        to: to.owner,
+        amount,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
 
     msg!(
-        "Transferência de {} de {} para {}",
+        " Transferência de {} de {} para {} concluída",
         amount,
         from.owner,
         to.owner
@@ -23,51 +63,68 @@ pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> 
 }
 
 pub fn pay_fee(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
+    require!(amount > 0, PaymentError::InvalidAmount);
+
     let from = &mut ctx.accounts.from;
-
-    require!(from.balance >= amount, ErrorCode::InsufficientBalance);
-    from.balance -= amount;
-
-    msg!("Taxa de {} paga pelo usuário {}", amount, ctx.accounts.owner.key());
-    Ok(())
-}
-
-pub fn withdraw(ctx: Context<ProcessPayment>, amount: u64, fee_percent: u64) -> Result<()> {
-    let from = &mut ctx.accounts.from;
-
-    require!(from.balance >= amount, ErrorCode::InsufficientBalance);
-    let fee = amount.checked_mul(fee_percent).ok_or(ErrorCode::Overflow)?.checked_div(100).ok_or(ErrorCode::Overflow)?;
-    let net_amount = amount.checked_sub(fee).ok_or(ErrorCode::Overflow)?;
+    require!(from.balance >= amount, PaymentError::InsufficientBalance);
 
     from.balance -= amount;
 
-    msg!("Usuário {} sacou {} ({} de taxa)", ctx.accounts.owner.key(), net_amount, fee);
+    emit!(FeePaid {
+        user: ctx.accounts.owner.key(),
+        amount,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
+
+    msg!(" Taxa de {} paga pelo usuário {}", amount, ctx.accounts.owner.key());
     Ok(())
 }
+
+pub fn withdraw(ctx: Context<Withdraw>, amount: u64, fee_percent: u64) -> Result<()> {
+    require!(amount > 0, PaymentError::InvalidAmount);
+
+    let from = &mut ctx.accounts.from;
+    require!(from.balance >= amount, PaymentError::InsufficientBalance);
+
+    let fee = amount.checked_mul(fee_percent).ok_or(PaymentError::Overflow)?
+        .checked_div(100).ok_or(PaymentError::Overflow)?;
+    let net_amount = amount.checked_sub(fee).ok_or(PaymentError::Overflow)?;
+
+    from.balance -= amount;
+
+    emit!(Withdrawn {
+        user: ctx.accounts.owner.key(),
+        net_amount,
+        fee_amount: fee,
+        fee_percent,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
+
+    msg!(
+        "Usuário {} sacou {} ({} de taxa - {}%)",
+        ctx.accounts.owner.key(),
+        net_amount,
+        fee,
+        fee_percent
+    );
+
+    Ok(())
+}
+
 
 pub fn validate_token(token: Pubkey) -> Result<()> {
     let accepted_tokens: Vec<Pubkey> = vec![
         Pubkey::from_str("So11111111111111111111111111111111111111112")
-        .map_err(|_| error!(ErrorCode::InvalidPubkey))?
+            .map_err(|_| error!(PaymentError::InvalidPubkey))?
     ];
 
-    require!(accepted_tokens.contains(&token), ErrorCode::TokenNotAllowed);
-    msg!("Token validado com sucesso.");
-    Ok(())
-}
+    require!(accepted_tokens.contains(&token), PaymentError::TokenNotAllowed);
 
-#[error_code]
-pub enum ErrorCode {
-    #[msg("Saldo insuficiente.")]
-    InsufficientBalance,
-    #[msg("Token não permitido.")]
-    TokenNotAllowed,
-    #[msg("Pubkey inválido.")]
-    InvalidPubkey,
-    #[msg("Overflow ao calcular valores.")]
-    Overflow,
-    #[msg("Overflow aritmético")]
-    MathOverflow,
-    #[msg("Conta de destino não foi fornecida")]
-    DestinationAccountNotProvided,
+    emit!(TokenValidated {
+        token,
+        timestamp: Clock::get()?.unix_timestamp,
+    });
+
+    msg!(" Token validado com sucesso: {}", token);
+    Ok(())
 }

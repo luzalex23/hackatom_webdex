@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
+pub mod errors;
 use anchor_spl::token::{Mint, TokenAccount, Token};
 
-declare_id!("DseNFJBsLpr6UGTiUxE8SLbBZABhz4CHAT9NDi6BhLJB");
+declare_id!("EMraoTa7ybPWHY9XLWmmp7YWpK5qo5GKMZccu3Er5seA");
 
 // Módulos internos
 pub mod state;
@@ -99,12 +100,21 @@ pub struct GetSubAccountInfo<'info> {
 
 #[derive(Accounts)]
 pub struct ProcessPayment<'info> {
-    #[account(mut)]
+    #[account(mut, has_one = owner)] // Adicionado 'has_one = owner' para validar o proprietário
     pub from: Account<'info, state::SubAccount>,
     pub owner: Signer<'info>,
     #[account(mut)]
     pub to_account: Account<'info, state::SubAccount>,
 }
+
+#[derive(Accounts)]
+pub struct Withdraw<'info> {
+    #[account(mut, has_one = owner)]
+    pub from: Account<'info, state::SubAccount>,
+    pub owner: Signer<'info>,
+}
+
+
 
 #[derive(Accounts)]
 pub struct ValidateToken {}
@@ -131,6 +141,7 @@ pub struct MintToken<'info> {
 #[program]
 pub mod hackatom_webdex {
     use super::*;
+    use crate::Withdraw;
     use crate::modules::factory::{ create_bot as factory_create_bot, get_bot_info as factory_get_bot_info };
     use crate::modules::manager::{
         register_user as register_user_handler,
@@ -211,21 +222,19 @@ pub mod hackatom_webdex {
     pub fn get_subaccount_info(ctx: Context<GetSubAccountInfo>) -> Result<state::SubAccount> {
         get_subaccount_info_handler(ctx)
     }
-
     pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
         process_payment_handler(ctx, amount)
-    }    
+    }
 
+    pub fn withdraw(ctx: Context<Withdraw>, amount: u64, fee_percent: u64) -> Result<()> {
+        withdraw_handler(ctx, amount, fee_percent)   
+    }
     pub fn validate_token(_ctx: Context<ValidateToken>, token: Pubkey) -> Result<()> {
         validate_token_handler(token)
     }
 
     pub fn pay_fee(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
         pay_fee_handler(ctx, amount)
-    }
-
-    pub fn withdraw(ctx: Context<ProcessPayment>, amount: u64, fee_percent: u64) -> Result<()> {
-        withdraw_handler(ctx, amount, fee_percent)
     }
 
     pub fn execute_strategy(ctx: Context<ExecuteStrategy>, data: Vec<u8>, execution_fee: u64) -> Result<()> {
